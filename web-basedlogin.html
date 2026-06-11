@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Auth Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .error-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8 transition-all duration-300 transform" id="authCard">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">Welcome Back</h1>
+            <p class="text-slate-400 mt-2 text-sm">Please sign in to access your account dashboard</p>
+        </div>
+
+        <div id="messageBanner" class="hidden p-4 rounded-xl text-sm font-semibold mb-6 transition-all duration-300"></div>
+
+        <form id="loginForm" class="space-y-6" novalidate>
+            <div>
+                <label for="username" class="block text-sm font-medium text-slate-300 mb-2">Username or Email</label>
+                <input type="text" id="username" autocomplete="username"
+                    class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your username">
+                <p id="usernameError" class="text-xs text-rose-500 mt-1 hidden"></p>
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <label for="password" class="block text-sm font-medium text-slate-300">Password</label>
+                </div>
+                <input type="password" id="password" autocomplete="current-password"
+                    class="w-full px-4 py-3 bg-slate-950 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200"
+                    placeholder="••••••••">
+                <p id="passwordError" class="text-xs text-rose-500 mt-1 hidden"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <button type="button" id="resetBtn"
+                    class="w-full py-3 bg-slate-700 hover:bg-slate-600 active:scale-95 text-slate-200 font-semibold rounded-xl border border-slate-600 transition-all duration-150">
+                    Reset
+                </button>
+                <button type="submit" id="submitBtn"
+                    class="w-full py-3 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white font-semibold rounded-xl shadow-lg shadow-sky-600/20 transition-all duration-150 flex justify-center items-center">
+                    <span id="btnText">Sign In</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const resetBtn = document.getElementById('resetBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const messageBanner = document.getElementById('messageBanner');
+        const authCard = document.getElementById('authCard');
+
+        // Input Field validation styling loops
+        function showError(inputEl, errorEl, message) {
+            inputEl.classList.add('border-rose-500', 'focus:ring-rose-500');
+            errorEl.innerText = message;
+            errorEl.classList.remove('hidden');
+        }
+
+        function clearError(inputEl, errorEl) {
+            inputEl.classList.remove('border-rose-500', 'focus:ring-rose-500');
+            errorEl.classList.add('hidden');
+        }
+
+        function displayGlobalMessage(message, type) {
+            messageBanner.innerText = message;
+            messageBanner.classList.remove('hidden', 'bg-rose-500/10', 'text-rose-400', 'border-rose-500/20', 'bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20', 'border');
+            
+            if (type === 'error') {
+                messageBanner.classList.add('bg-rose-500/10', 'text-rose-400', 'border-rose-500/20', 'border');
+                authCard.classList.add('error-shake');
+                setTimeout(() => authCard.classList.remove('error-shake'), 400);
+            } else {
+                messageBanner.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/20', 'border');
+            }
+        }
+
+        // Reset Event Logic Function
+        resetBtn.addEventListener('click', () => {
+            loginForm.reset();
+            clearError(usernameInput, document.getElementById('usernameError'));
+            clearError(passwordInput, document.getElementById('passwordError'));
+            messageBanner.classList.add('hidden');
+        });
+
+        // Async Form Validation and Pipeline Handlers
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            messageBanner.classList.add('hidden');
+            
+            let isValid = true;
+            const userVal = usernameInput.value.trim();
+            const passVal = passwordInput.value.trim();
+
+            if (!userVal) {
+                showError(usernameInput, document.getElementById('usernameError'), 'Username requirement omitted.');
+                isValid = false;
+            } else {
+                clearError(usernameInput, document.getElementById('usernameError'));
+            }
+
+            if (!passVal) {
+                showError(passwordInput, document.getElementById('passwordError'), 'Password confirmation required.');
+                isValid = false;
+            } else if (passVal.length < 6) {
+                showError(passwordInput, document.getElementById('passwordError'), 'Security minimum target is 6 characters.');
+                isValid = false;
+            } else {
+                clearError(passwordInput, document.getElementById('passwordError'));
+            }
+
+            if (!isValid) return;
+
+            // Activate Request UI loading state 
+            submitBtn.disabled = true;
+            btnText.innerText = "Verifying...";
+
+            try {
+                // Pointing to absolute network locations or self-managed backend instances
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: userVal, password: passVal })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayGlobalMessage(data.message, 'success');
+                    loginForm.reset();
+                } else {
+                    displayGlobalMessage(data.message || 'Verification rejected.', 'error');
+                }
+            } catch (error) {
+                displayGlobalMessage('Network transmission failure. Try again.', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.innerText = "Sign In";
+            }
+        });
+    </script>
+</body>
+</html>
