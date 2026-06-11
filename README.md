@@ -1,0 +1,1 @@
+Using any programming language of choice, develop a user-friendly GUI-based simple/ordinary CALCULATOR containing components such as +, -, /, \, *, ^, %, C (Clear). Upload the complete source code and documentations (screenshots, outputs, reports etc.) to your GitHub repository, and submit the repository URL.
