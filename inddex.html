@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Function Calculator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --calc-bg: #1e293b;
+            --screen-bg: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #64748b;
+            --btn-num: #334155;
+            --btn-num-hover: #475569;
+            --btn-op: #f97316;
+            --btn-op-hover: #ea580c;
+            --btn-fn: #475569;
+            --btn-fn-hover: #64748b;
+            --accent: #38bdf8;
+            --accent-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .calculator {
+            background-color: var(--calc-bg);
+            width: 100%;
+            max-width: 420px;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: max-width 0.3s ease;
+        }
+
+        .calculator.scientific {
+            max-width: 750px;
+        }
+
+        .screen {
+            background-color: var(--screen-bg);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 130px;
+            border: 1px solid #334155;
+        }
+
+        .history {
+            color: var(--text-muted);
+            font-size: 1rem;
+            min-height: 1.5rem;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .display {
+            color: var(--text-main);
+            font-size: 2.3rem;
+            font-weight: 600;
+            overflow-x: auto;
+            white-space: nowrap;
+            margin-top: 5px;
+        }
+
+        /* Mode & Input Panel Controls */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mode-status {
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .toggle-btn {
+            background: var(--btn-fn);
+            color: var(--text-main);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: background 0.2s;
+        }
+
+        .toggle-btn:hover { background: var(--btn-fn-hover); }
+        .toggle-btn.active { background: var(--accent-green); color: #000; }
+
+        /* Custom Function Input Area */
+        .function-panel {
+            display: none;
+            background: #111827;
+            padding: 12px;
+            border-radius: 14px;
+            flex-direction: column;
+            gap: 10px;
+            border: 1px dashed var(--accent);
+        }
+
+        .function-panel.show { display: flex; }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group label {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 0.9rem;
+            min-width: 45px;
+        }
+
+        .function-panel input {
+            flex: 1;
+            background: #1f2937;
+            border: 1px solid #4b5563;
+            padding: 8px 12px;
+            color: white;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .function-panel input:focus {
+            border-color: var(--accent);
+        }
+
+        /* Grids layout */
+        .grids-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .calculator.scientific .grids-container {
+            grid-template-columns: 1fr 1.2fr;
+        }
+
+        .pad, .scientific-keys {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .scientific-keys { display: none; }
+        .calculator.scientific .scientific-keys { display: grid; }
+
+        @media (max-width: 650px) {
+            .calculator.scientific .grids-container { grid-template-columns: 1fr; }
+            .calculator.scientific { max-width: 420px; }
+        }
+
+        /* Buttons Styling */
+        button.calc-key {
+            border: none;
+            outline: none;
+            padding: 18px 5px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            color: var(--text-main);
+        }
+
+        button.calc-key:active { transform: scale(0.96); }
+
+        .btn-number { background-color: var(--btn-num); }
+        .btn-number:hover { background-color: var(--btn-num-hover); }
+
+        .btn-operator { background-color: var(--btn-op); }
+        .btn-operator:hover { background-color: var(--btn-op-hover); }
+
+        .btn-function { background-color: var(--btn-fn); color: #cbd5e1; }
+        .btn-function:hover { background-color: var(--btn-fn-hover); }
+
+        .btn-equal { background-color: var(--accent); color: #0f172a; }
+        .btn-equal:hover { background-color: #7dd3fc; }
+    </style>
+</head>
+<body>
+
+    <div class="calculator" id="calculator">
+        <div class="controls-row">
+            <span class="mode-status" id="modeStatus">Standard</span>
+            <div style="display:flex; gap:6px;">
+                <button class="toggle-btn" id="fnToggle" onclick="toggleFunctionMode()">f(x) Mode</button>
+                <button class="toggle-btn" onclick="toggleScientificMode()">Scientific</button>
+            </div>
+        </div>
+
+        <div class="function-panel" id="functionPanel">
+            <div class="input-group">
+                <label>f(x) =</label>
+                <input type="text" id="fxInput" placeholder="e.g., 2*x + sin(x) - x^2" onfocus="setCurrentTarget('fxInput')">
+            </div>
+            <div class="input-group">
+                <label>x =</label>
+                <input type="text" id="xValueInput" placeholder="e.g., 5" onfocus="setCurrentTarget('xValueInput')">
+            </div>
+        </div>
+
+        <div class="screen">
+            <div class="history" id="history"></div>
+            <div class="display" id="display">0</div>
+        </div>
+
+        <div class="grids-container">
+            <div class="scientific-keys">
+                <button class="calc-key btn-function" onclick="pressKey('sin(')">sin</button>
+                <button class="calc-key btn-function" onclick="pressKey('cos(')">cos</button>
+                <button class="calc-key btn-function" onclick="pressKey('tan(')">tan</button>
+                <button class="calc-key btn-function" onclick="toggleDegRad()" id="degRadBtn">DEG</button>
+                
+                <button class="calc-key btn-function" onclick="pressKey('log(')">log</button>
+                <button class="calc-key btn-function" onclick="pressKey('ln(')">ln</button>
+                <button class="calc-key btn-function" onclick="pressKey('^')">x^y</button>
+                <button class="calc-key btn-function" onclick="pressKey('sqrt(')">√</button>
+                
+                <button class="calc-key btn-function" onclick="pressKey('π')">π</button>
+                <button class="calc-key btn-function" onclick="pressKey('e')">e</button>
+                <button class="calc-key btn-function" onclick="pressKey('(')">(</button>
+                <button class="calc-key btn-function" onclick="pressKey(')')">)</button>
+            </div>
+
+            <div class="pad">
+                <button class="calc-key btn-function" onclick="clearAll()">AC</button>
+                <button class="calc-key btn-function" onclick="deleteLast()">⌫</button>
+                <button class="calc-key btn-function" onclick="pressKey('x')" id="xKey" style="color:var(--accent); display:none;">x</button>
+                <button class="calc-key btn-function" id="pctKey" onclick="pressKey('%')">%</button>
+                <button class="calc-key btn-operator" onclick="pressKey('/')">÷</button>
+
+                <button class="calc-key btn-number" onclick="pressKey('7')">7</button>
+                <button class="calc-key btn-number" onclick="pressKey('8')">8</button>
+                <button class="calc-key btn-number" onclick="pressKey('9')">9</button>
+                <button class="calc-key btn-operator" onclick="pressKey('*')">×</button>
+
+                <button class="calc-key btn-number" onclick="pressKey('4')">4</button>
+                <button class="calc-key btn-number" onclick="pressKey('5')">5</button>
+                <button class="calc-key btn-number" onclick="pressKey('6')">6</button>
+                <button class="calc-key btn-operator" onclick="pressKey('-')">−</button>
+
+                <button class="calc-key btn-number" onclick="pressKey('1')">1</button>
+                <button class="calc-key btn-number" onclick="pressKey('2')">2</button>
+                <button class="calc-key btn-number" onclick="pressKey('3')">3</button>
+                <button class="calc-key btn-operator" onclick="pressKey('+')">+</button>
+
+                <button class="calc-key btn-number" onclick="negateValue()">±</button>
+                <button class="calc-key btn-number" onclick="pressKey('0')">0</button>
+                <button class="calc-key btn-number" onclick="pressKey('.')">.</button>
+                <button class="calc-key btn-equal" onclick="executeCalculation()">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const display = document.getElementById('display');
+        const historyDisplay = document.getElementById('history');
+        const calcElement = document.getElementById('calculator');
+        const modeStatus = document.getElementById('modeStatus');
+        const degRadBtn = document.getElementById('degRadBtn');
+        const functionPanel = document.getElementById('functionPanel');
+        const fnToggle = document.getElementById('fnToggle');
+        const fxInput = document.getElementById('fxInput');
+        const xValueInput = document.getElementById('xValueInput');
+        const xKey = document.getElementById('xKey');
+        const pctKey = document.getElementById('pctKey');
+
+        let standardExpression = '0';
+        let isScientific = false;
+        let isFunctionMode = false;
+        let isRadians = false; 
+        let activeInputId = null; // Tracks typing location in f(x) mode
+
+        function toggleScientificMode() {
+            isScientific = !isScientific;
+            calcElement.classList.toggle('scientific', isScientific);
+            updateStatusText();
+        }
+
+        function toggleFunctionMode() {
+            isFunctionMode = !isFunctionMode;
+            functionPanel.classList.toggle('show', isFunctionMode);
+            fnToggle.classList.toggle('active', isFunctionMode);
+            
+            if(isFunctionMode) {
+                xKey.style.display = "block";
+                pctKey.style.display = "none";
+                activeInputId = 'fxInput';
+                fxInput.focus();
+            } else {
+                xKey.style.display = "none";
+                pctKey.style.display = "block";
+                activeInputId = null;
+            }
+            updateStatusText();
+        }
+
+        function setCurrentTarget(id) {
+            activeInputId = id;
+        }
+
+        function updateStatusText() {
+            let status = isFunctionMode ? "Function f(x)" : "Standard";
+            if (isScientific) status += isRadians ? " (RAD)" : " (DEG)";
+            modeStatus.innerText = status;
+        }
+
+        function toggleDegRad() {
+            isRadians = !isRadians;
+            degRadBtn.innerText = isRadians ? 'RAD' : 'DEG';
+            updateStatusText();
+        }
+
+        // Handles button inputs dynamically depending on chosen Mode
+        function pressKey(val) {
+            if (isFunctionMode && activeInputId) {
+                // Insert key value into active custom input field
+                const inputEl = document.getElementById(activeInputId);
+                const start = inputEl.selectionStart;
+                const end = inputEl.selectionEnd;
+                const text = inputEl.value;
+                inputEl.value = text.slice(0, start) + val + text.slice(end);
+                inputEl.focus();
+                // Move cursor directly past inserted key
+                inputEl.selectionStart = inputEl.selectionEnd = start + val.length;
+            } else {
+                // Standard mode entry layout logic
+                if (standardExpression === '0' && val !== '.') {
+                    standardExpression = val;
+                } else {
+                    standardExpression += val;
+                }
+                display.innerText = standardExpression;
+            }
+        }
+
+        function clearAll() {
+            if (isFunctionMode) {
+                fxInput.value = '';
+                xValueInput.value = '';
+            } else {
+                standardExpression = '0';
+                display.innerText = '0';
+                historyDisplay.innerText = '';
+            }
+        }
+
+        function deleteLast() {
+            if (isFunctionMode && activeInputId) {
+                const inputEl = document.getElementById(activeInputId);
+                inputEl.value = inputEl.value.slice(0, -1);
+            } else {
+                if (standardExpression.length > 1) {
+                    standardExpression = standardExpression.slice(0, -1);
+                } else {
+                    standardExpression = '0';
+                }
+                display.innerText = standardExpression;
+            }
+        }
+
+        function negateValue() {
+            if (isFunctionMode && activeInputId) {
+                pressKey('-');
+            } else {
+                if (standardExpression.startsWith('-')) {
+                    standardExpression = standardExpression.slice(1);
+                } else if (standardExpression !== '0') {
+                    standardExpression = '-' + standardExpression;
+                }
+                display.innerText = standardExpression;
+            }
+        }
+
+        // Custom Safe Math Compiler Engine
+        function parseAndEvaluate(str, xVal = 0) {
+            // Translate clean layout into actual Javascript safe expressions
+            let expression = str
+                .replace(/π/g, `(${Math.PI})`)
+                .replace(/e/g, `(${Math.E})`)
+                .replace(/x/g, `(${xVal})`)
+                .replace(/\^/g, '**');
+
+            // Apply custom safe Math overrides for trig, functions etc.
+            const trigMultiplier = isRadians ? 1 : (Math.PI / 180);
+            
+            // Advanced RegEx targeting to make functional strings Javascript-executable
+            expression = expression.replace(/sin\(([^)]+)\)/g, (m, p1) => `Math.sin((${p1}) * ${trigMultiplier})`);
+            expression = expression.replace(/cos\(([^)]+)\)/g, (m, p1) => `Math.cos((${p1}) * ${trigMultiplier})`);
+            expression = expression.replace(/tan\(([^)]+)\)/g, (m, p1) => `Math.tan((${p1}) * ${trigMultiplier})`);
+            expression = expression.replace(/log\(([^)]+)\)/g, (m, p1) => `Math.log10(${p1})`);
+            expression = expression.replace(/ln\(([^)]+)\)/g, (m, p1) => `Math.log(${p1})`);
+            expression = expression.replace(/sqrt\(([^)]+)\)/g, (m, p1) => `Math.sqrt(${p1})`);
+
+            // Safe sandbox evaluations
+            const result = Function(`"use strict"; return (${expression})`)();
+            if (isNaN(result) || !isFinite(result)) throw new Error("Invalid Output");
+            return parseFloat(result.toPrecision(12));
+        }
+
+        function executeCalculation() {
+            try {
+                if (isFunctionMode) {
+                    let formula = fxInput.value;
+                    let variableX = xValueInput.value.trim() === "" ? "0" : xValueInput.value;
+                    
+                    // Evaluate x value first in case user put an equation inside x (like 5+2)
+                    let computedX = parseAndEvaluate(variableX);
+                    let finalOutput = parseAndEvaluate(formula, computedX);
+
+                    historyDisplay.innerText = `f(${computedX}) for: ${formula}`;
+                    display.innerText = finalOutput;
+                } else {
+                    let finalOutput = parseAndEvaluate(standardExpression);
+                    historyDisplay.innerText = `${standardExpression} =`;
+                    display.innerText = finalOutput;
+                    standardExpression = finalOutput.toString();
+                }
+            } catch (err) {
+                display.innerText = "Error";
+                historyDisplay.innerText = "Check your formula/inputs";
+            }
+        }
+
+        // Seamless Physical Keyboard Tracking integration
+        window.addEventListener('keydown', e => {
+            if (e.key >= '0' && e.key <= '9' || ['.','+','-','*','/','(',')','x','%', '^'].includes(e.key)) {
+                e.preventDefault();
+                pressKey(e.key);
+            }
+            if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                executeCalculation();
+            }
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                deleteLast();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                clearAll();
+            }
+        });
+    </script>
+</body>
+    </html>
