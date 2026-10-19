@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRO – Issues Reporting Outlet</title>
+<style>
+  :root { --green:#1b6b3a; --light:#eaf5ee; --text:#1c2a22; --border:#cfd9d2; --warn:#b3261e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Arial, sans-serif; color:var(--text); background:#f6f8f6; }
+  header { background:var(--green); color:#fff; padding:18px 16px; text-align:center; }
+  header h1 { margin:0; font-size:1.5rem; }
+  header p { margin:4px 0 0; font-size:.9rem; opacity:.9; }
+  nav { display:flex; justify-content:center; gap:8px; padding:10px; background:#fff; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  nav button { border:1px solid var(--green); background:#fff; color:var(--green); padding:8px 14px; border-radius:20px; cursor:pointer; font-size:.9rem; }
+  nav button.active { background:var(--green); color:#fff; }
+  main { max-width:640px; margin:16px auto; padding:0 14px 40px; }
+  section { display:none; background:#fff; border:1px solid var(--border); border-radius:10px; padding:16px; }
+  section.active { display:block; }
+  label { display:block; font-weight:600; margin:12px 0 4px; font-size:.9rem; }
+  input, select, textarea { width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; font-size:1rem; font-family:inherit; }
+  textarea { min-height:110px; resize:vertical; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:12px; font-weight:400; }
+  .check input { width:auto; }
+  .primary { margin-top:16px; width:100%; background:var(--green); color:#fff; border:0; padding:12px; border-radius:6px; font-size:1rem; cursor:pointer; }
+  .msg { margin-top:12px; padding:10px; border-radius:6px; background:var(--light); border:1px solid var(--green); display:none; }
+  .error { color:var(--warn); font-size:.85rem; margin-top:4px; display:none; }
+  .card { border:1px solid var(--border); border-radius:8px; padding:12px; margin-top:12px; }
+  .card h3 { margin:0 0 4px; font-size:1rem; }
+  .meta { font-size:.8rem; color:#5b6b61; }
+  .badge { display:inline-block; padding:2px 10px; border-radius:12px; font-size:.75rem; font-weight:700; margin-left:6px; }
+  .Pending { background:#fff3cd; color:#7a5b00; }
+  .In-Progress { background:#d6e8ff; color:#0b4a8f; }
+  .Resolved { background:#d4f0dc; color:#14532d; }
+  .urgent { color:var(--warn); font-weight:700; }
+  .row { display:flex; gap:8px; }
+  .row > * { flex:1; }
+  .small { padding:6px 10px; font-size:.8rem; width:auto; margin-top:8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>IRO</h1>
+  <p>Issues Reporting Outlet – AAUA Students &amp; Indigenes</p>
+</header>
+
+<nav>
+  <button class="active" data-tab="report">Report Issue</button>
+  <button data-tab="track">Track Issue</button>
+  <button data-tab="resolved">Resolved</button>
+  <button data-tab="admin">Admin</button>
+</nav>
+
+<main>
+  <!-- REPORT -->
+  <section id="report" class="active">
+    <h2>Report an Issue</h2>
+    <form id="reportForm" novalidate>
+      <label class="check"><input type="checkbox" id="anon"> Report anonymously</label>
+      <div id="identity">
+        <label for="name">Full name</label>
+        <input id="name" type="text" placeholder="Your name">
+        <label for="contact">Phone or email</label>
+        <input id="contact" type="text" placeholder="So we can reach you">
+      </div>
+      <label for="who">I am a</label>
+      <select id="who">
+        <option>Student</option>
+        <option>Indigene</option>
+      </select>
+      <label for="community">Community</label>
+      <select id="community">
+        <option>Akungba</option><option>Iwaro</option><option>Etioro</option><option>Ayegunle</option><option>Other</option>
+      </select>
+      <label for="category">Category</label>
+      <select id="category">
+        <option>Student–Indigene Conflict</option>
+        <option>Theft / Robbery</option>
+        <option>Harassment / Assault</option>
+        <option>Landlord / Rent Dispute</option>
+        <option>Security / Cultism</option>
+        <option>Infrastructure (Road, Water, Power)</option>
+        <option>Overpricing</option>
+        <option>Other</option>
+      </select>
+      <label for="title">Issue title</label>
+      <input id="title" type="text" maxlength="80" placeholder="Short summary">
+      <div class="error" id="titleErr">Please enter a title.</div>
+      <label for="desc">Description</label>
+      <textarea id="desc" placeholder="Describe what happened, where and when"></textarea>
+      <div class="error" id="descErr">Please describe the issue.</div>
+      <label class="check"><input type="checkbox" id="urgent"> Mark as urgent</label>
+      <button class="primary" type="submit">Submit Issue</button>
+    </form>
+    <div class="msg" id="submitMsg"></div>
+  </section>
+
+  <!-- TRACK -->
+  <section id="track">
+    <h2>Track Your Issue</h2>
+    <label for="trackId">Enter your Issue ID</label>
+    <input id="trackId" type="text" placeholder="e.g. IRO-1001">
+    <button class="primary" id="trackBtn">Check Status</button>
+    <div id="trackResult"></div>
+  </section>
+
+  <!-- RESOLVED -->
+  <section id="resolved">
+    <h2>Resolved Issues</h2>
+    <div id="resolvedList"></div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="admin">
+    <h2>Admin Panel</h2>
+    <div id="adminLogin">
+      <label for="pass">Admin password</label>
+      <input id="pass" type="password" placeholder="Demo password: admin123">
+      <button class="primary" id="loginBtn">Log in</button>
+      <div class="error" id="loginErr">Wrong password.</div>
+    </div>
+    <div id="adminPanel" style="display:none">
+      <div class="row">
+        <select id="filterStatus">
+          <option value="">All statuses</option>
+          <option>Pending</option><option>In Progress</option><option>Resolved</option>
+        </select>
+        <button class="primary small" id="logoutBtn" style="margin-top:0">Log out</button>
+      </div>
+      <div id="adminStats" class="meta" style="margin-top:10px"></div>
+      <div id="adminList"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var KEY = 'iro_issues';
+  var COUNTER = 'iro_counter';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
+  }
+  function save(list) {
+    try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function nextId() {
+    var n = 1000;
+    try { n = parseInt(localStorage.getItem(COUNTER) || '1000', 10) + 1; localStorage.setItem(COUNTER, String(n)); }
+    catch (e) { n = 1000 + load().length + 1; }
+    return 'IRO-' + n;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function $(id) { return document.getElementById(id); }
+  function cls(status) { return status.replace(' ', '-'); }
+
+  // Tabs
+  var tabs = document.querySelectorAll('nav button');
+  tabs.forEach(function (b) {
+    b.addEventListener('click', function () {
+      tabs.forEach(function (x) { x.classList.remove('active'); });
+      document.querySelectorAll('section').forEach(function (s) { s.classList.remove('active'); });
+      b.classList.add('active');
+      $(b.dataset.tab).classList.add('active');
+      if (b.dataset.tab === 'resolved') renderResolved();
+    });
+  });
+
+  // Anonymous toggle
+  $('anon').addEventListener('change', function () {
+    $('identity').style.display = this.checked ? 'none' : 'block';
+  });
+
+  // Submit
+  $('reportForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = $('title').value.trim();
+    var desc = $('desc').value.trim();
+    $('titleErr').style.display = title ? 'none' : 'block';
+    $('descErr').style.display = desc ? 'none' : 'block';
+    if (!title || !desc) return;
+    var anon = $('anon').checked;
+    var issue = {
+      id: nextId(),
+      anonymous: anon,
+      name: anon ? 'Anonymous' : ($('name').value.trim() || 'Not provided'),
+      contact: anon ? '' : $('contact').value.trim(),
+      who: $('who').value,
+      community: $('community').value,
+      category: $('category').value,
+      title: title,
+      desc: desc,
+      urgent: $('urgent').checked,
+      status: 'Pending',
+      response: '',
+      date: new Date().toLocaleString()
+    };
+    var list = load();
+    list.unshift(issue);
+    save(list);
+    $('reportForm').reset();
+    $('identity').style.display = 'block';
+    var m = $('submitMsg');
+    m.style.display = 'block';
+    m.innerHTML = 'Issue submitted. Your Issue ID is <strong>' + esc(issue.id) + '</strong>. Keep it to track progress.';
+  });
+
+  // Track
+  $('trackBtn').addEventListener('click', function () {
+    var id = $('trackId').value.trim().toUpperCase();
+    var found = load().filter(function (i) { return i.id === id; })[0];
+    var out = $('trackResult');
+    if (!found) { out.innerHTML = '<div class="card">No issue found with that ID.</div>'; return; }
+    out.innerHTML = '<div class="card"><h3>' + esc(found.title) +
+      '<span class="badge ' + cls(found.status) + '">' + esc(found.status) + '</span></h3>' +
+      '<div class="meta">' + esc(found.category) + ' · ' + esc(found.date) + '</div>' +
+      '<p>' + esc(found.desc) + '</p>' +
+      '<p><strong>Response:</strong> ' + (found.response ? esc(found.response) : 'No response yet.') + '</p></div>';
+  });
+
+  // Resolved
+  function renderResolved() {
+    var list = load().filter(function (i) { return i.status === 'Resolved'; });
+    $('resolvedList').innerHTML = list.length ? list.map(function (i) {
+      return '<div class="card"><h3>' + esc(i.title) + '<span class="badge Resolved">Resolved</span></h3>' +
+        '<div class="meta">' + esc(i.category) + ' · ' + esc(i.community) + '</div>' +
+        '<p><strong>Response:</strong> ' + esc(i.response || 'Resolved.') + '</p></div>';
+    }).join('') : '<p class="meta">No resolved issues yet.</p>';
+  }
+
+  // Admin
+  $('loginBtn').addEventListener('click', function () {
+    if ($('pass').value === 'admin123') {
+      $('adminLogin').style.display = 'none';
+      $('adminPanel').style.display = 'block';
+      $('loginErr').style.display = 'none';
+      renderAdmin();
+    } else { $('loginErr').style.display = 'block'; }
+  });
+  $('logoutBtn').addEventListener('click', function () {
+    $('adminPanel').style.display = 'none';
+    $('adminLogin').style.display = 'block';
+    $('pass').value = '';
+  });
+  $('filterStatus').addEventListener('change', renderAdmin);
+
+  function renderAdmin() {
+    var all = load();
+    var f = $('filterStatus').value;
+    var list = f ? all.filter(function (i) { return i.status === f; }) : all;
+    var count = function (s) { return all.filter(function (i) { return i.status === s; }).length; };
+    $('adminStats').textContent = 'Total: ' + all.length + ' | Pending: ' + count('Pending') +
+      ' | In Progress: ' + count('In Progress') + ' | Resolved: ' + count('Resolved');
+    $('adminList').innerHTML = list.length ? list.map(function (i) {
+      return '<div class="card" data-id="' + esc(i.id) + '"><h3>' + esc(i.id) + ': ' + esc(i.title) +
+        '<span class="badge ' + cls(i.status) + '">' + esc(i.status) + '</span></h3>' +
+        '<div class="meta">' + esc(i.category) + ' · ' + esc(i.who) + ' · ' + esc(i.community) + ' · ' + esc(i.date) +
+        (i.urgent ? ' · <span class="urgent">URGENT</span>' : '') + '</div>' +
+        '<div class="meta">Reporter: ' + esc(i.name) + (i.contact ? ' (' + esc(i.contact) + ')' : '') + '</div>' +
+        '<p>' + esc(i.desc) + '</p>' +
+        '<select class="st"><option' + (i.status === 'Pending' ? ' selected' : '') + '>Pending</option>' +
+        '<option' + (i.status === 'In Progress' ? ' selected' : '') + '>In Progress</option>' +
+        '<option' + (i.status === 'Resolved' ? ' selected' : '') + '>Resolved</option></select>' +
+        '<textarea class="rs" placeholder="Response to reporter">' + esc(i.response) + '</textarea>' +
+        '<button class="primary small upd">Update</button></div>';
+    }).join('') : '<p class="meta">No issues to show.</p>';
+  }
+
+  $('adminList').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('upd')) return;
+    var card = e.target.closest('.card');
+    var id = card.dataset.id;
+    var list = load();
+    list.forEach(function (i) {
+      if (i.id === id) {
+        i.status = card.querySelector('.st').value;
+        i.response = card.querySelector('.rs').value.trim();
+      }
+    });
+    save(list);
+    renderAdmin();
+  });
+})();
+</script>
+</body>
+</html>
